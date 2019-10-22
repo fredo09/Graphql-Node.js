@@ -1,12 +1,15 @@
-var express = require('express');
-var express_graphql = require('express-graphql');
-var { buildSchema } = require('graphql');
+const express = require('express');
+const express_graphql = require('express-graphql');
+const { buildSchema } = require('graphql');
 
 // GraphQL schema
-var schema = buildSchema(`
+const schema = buildSchema(`
     type Query {
         course(id: Int!): Course
         courses(topic: String): [Course]
+    },
+    type Mutation {
+        updateCourseTopic(id: Int!, topic: String!): Course
     },
     type Course {
         id: Int
@@ -17,7 +20,8 @@ var schema = buildSchema(`
         url: String
     }
 `);
-var coursesData = [
+
+const coursesData = [
     {
         id: 1,
         title: 'The Complete Node.js Developer Course',
@@ -43,13 +47,15 @@ var coursesData = [
         url: 'https://codingthesmartway.com/courses/understand-javascript/'
     }
 ]
-var getCourse = function(args) { 
+
+const getCourse = function(args) { 
     var id = args.id;
     return coursesData.filter(course => {
         return course.id == id;
     })[0];
 }
-var getCourses = function(args) {
+
+const getCourses = function(args) {
     if (args.topic) {
         var topic = args.topic;
         return coursesData.filter(course => course.topic === topic);
@@ -57,16 +63,29 @@ var getCourses = function(args) {
         return coursesData;
     }
 }
-var root = {
+
+const updateCourseTopic = function({id, topic}) {
+    coursesData.map(course => {
+        if (course.id === id) {
+            course.topic = topic;
+            return course;
+        }
+    });
+    return coursesData.filter(course => course.id === id) [0];
+}
+
+const root = {
     course: getCourse,
-    courses: getCourses
+    courses: getCourses,
+    updateCourseTopic: updateCourseTopic
 };
 
 // Create an express server and a GraphQL endpoint
-var app = express();
+const app = express();
 app.use('/graphql', express_graphql({
     schema: schema,
     rootValue: root,
     graphiql: true
 }));
+
 app.listen(4000, () => console.log('Express GraphQL Server Now Running On localhost:4000/graphql'));
